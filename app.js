@@ -5,6 +5,7 @@ const path = require('path');
 // var urlencodedParser = bodyParser.urlencoded({ extended: false }) 
 //const redis = require('redis');
 const db = require('./models/statsinformation');
+const  Sequelize  = require('sequelize');
 const app = express();
 
 const PORT = process.env.PORT || 3000;
@@ -19,13 +20,44 @@ app.use(express.static(sPath));
 //const client = redis.createClient(REDIS_PORT);
 
 
+var connection = new Sequelize('record', null, null, {
+    dialect:'sqlite'
+})
+var Redis_status = connection.define(redis_status,{
+    connect_receive : Sequelize.STRING,
+    cmd_processe: Sequelize.STRING,
+    ops_per_se: Sequelize.STRING,
+    rejected_connec: Sequelize.STRING,
+    expired_key: Sequelize.STRING,
+    evicted_key: Sequelize.STRING,
+    hit: Sequelize.STRING,
+    misse: Sequelize.STRING
+
+});
 
 app.get('/',(req,res)=>{
  res.sendFile(sPath);
 });
 
 app.post('/',(req,res)=>{
-    res.redirect('/api/add');
+    const {connect_received , cmd_processed, ops_per_sec , rejected_connect , expired_keys ,evicted_keys,hits,misses} = req.body
+
+    connection
+    .sync({
+        force:true
+    })
+    .then(function(){
+          redis_status.build({
+            connect_receive : connect_received,
+            cmd_processe : cmd_processed,
+            ops_per_se:ops_per_sec,
+            rejected_connec:rejected_connect,
+            expired_key:expired_keys,
+            evicted_key:evicted_keys,
+            hit:hits,
+            misse:misses
+        })
+    }).save()
 });
 app.get('/api/redis_list',(req,res)=>{
     res.end("Will print data from redis");
